@@ -1,5 +1,7 @@
 # Telegram AI Dating Agent
 
+# p.s: we broke up after this
+
 An AI-powered Telegram agent that helps you craft witty, engaging messages for your conversations. Built with Claude Sonnet, [Nia](https://trynia.ai) semantic search, and a full-featured Telegram MCP integration.
 
 ## What It Does
