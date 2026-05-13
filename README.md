@@ -2,11 +2,23 @@
 
 # p.s: we broke up after this
 
-A voice-first romantic Telegram agent for girlfriend-style chat: text replies, flirty message help, TTS voice notes, and a practical call-mode scaffold for realtime voice/video integrations.
+## What is this?
 
-This keeps the original theme and branding: it is still a girlfriend/dating-style agent, not a generic assistant.
+This is a Telegram-based romantic AI companion / dating agent.
 
-## What Works Now
+It is built around the original girlfriend-style concept: a playful, flirty, emotionally warm agent that can help with romantic conversations, generate sweet replies, send Telegram messages, and now speak through TTS voice notes.
+
+It is **not** a general-purpose productivity assistant. The project is intentionally themed as a girlfriend/dating companion and keeps that tone throughout the agent, tools, and docs.
+
+At a high level, it has three layers:
+
+1. **TypeScript AI agent** — the conversational brain. It decides what to say, whether to use text or voice, and when to use Telegram tools.
+2. **Python Telegram bridge** — a FastAPI + Telethon service that reads/sends Telegram messages, audio files, voice notes, reactions, and call-mode session commands.
+3. **Voice/call services** — modular TTS providers, currently ElevenLabs-first, plus realistic scaffolding for browser/WebRTC live calls and future avatar/video experiences.
+
+The current version can work as a text-first Telegram dating assistant or a voice-first romantic companion that sends generated audio replies as Telegram voice notes.
+
+## What it can do
 
 - Text chat and existing Telegram messaging tools still work
 - Reads chats/messages and helps craft romantic, witty, or playful replies
@@ -20,7 +32,7 @@ This keeps the original theme and branding: it is still a girlfriend/dating-styl
 - Call-mode session scaffold with honest Telegram limitations
 - Optional avatar/video provider interfaces for future Tavus/HeyGen/LiveKit/Daily/WebRTC work
 
-## What Is Scaffolded vs Fully Working
+## What is scaffolded vs fully working
 
 Fully working in this repo:
 
@@ -92,7 +104,7 @@ Optional future realtime path:
 └──────────────────────────┘
 ```
 
-## Quick Start
+## Quick start
 
 ### 1. Get Telegram API Credentials
 
@@ -101,7 +113,7 @@ Get your API credentials at [my.telegram.org/apps](https://my.telegram.org/apps)
 ### 2. Install & Configure
 
 ```bash
-git clone https://github.com/arlanrakh/talk-to-girlfriend-ai.git
+git clone https://github.com/nimaansari/talk-to-girlfriend-ai.git
 cd talk-to-girlfriend-ai
 
 # Install Python dependencies
