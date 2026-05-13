@@ -1,7 +1,5 @@
 # Telegram AI Dating Agent
 
-# p.s: we broke up after this
-
 ## What is this?
 
 This is a Telegram-based romantic AI companion / dating agent.
