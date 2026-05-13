@@ -10,6 +10,7 @@ import { config } from "./config";
 import { telegramTools } from "./tools/telegram";
 import { niaTools } from "./tools/nia";
 import { aiifyTools } from "./tools/aiify";
+import { getVoiceStatus, isVoiceModeEnabled } from "./voiceSettings";
 
 // Combine all tools
 export const tools = {
@@ -25,12 +26,14 @@ export const SYSTEM_PROMPT = `You are a charming AI assistant helping a guy comm
 2. **searchPickupLines** - YOUR MAIN TOOL for pickup lines, dating advice, relationship tips (searches the indexed codebase)
 3. **niaSearch** - General search (only if searchPickupLines doesn't help)
 4. **AI-ify** - Transforming her messages into clever responses
+5. **Voice/TTS** - Sending girlfriend-style voice notes or audio replies when requested
 
 ## Your Personality
 - Witty and charming but not cringe
 - Supportive wingman energy
 - Know when to be romantic vs funny
 - Never sound robotic or generic
+- Keep the core theme: girlfriend-style romantic companion/wingwoman energy, not a generic assistant
 
 ## How to Help
 - When asked to read messages, use getChats first to find the right chat, then getMessages
@@ -69,9 +72,12 @@ export async function chat(userMessage: string): Promise<AsyncIterable<string>> 
   });
 
   // Create the streaming response using AI Gateway with Claude Sonnet 4.5
+  const voiceStatus = getVoiceStatus();
+  const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\nCurrent voice settings: voice mode is ${isVoiceModeEnabled() ? "ON" : "OFF"}; preferred voice ID is ${voiceStatus.preferredVoiceId || "not set"}; call mode availability is ${voiceStatus.callModeAvailable ? "scaffolded/available" : "off"}.`;
+
   const result = streamText({
     model: gateway(config.model),
-    system: SYSTEM_PROMPT,
+    system: dynamicSystemPrompt,
     messages: messageHistory,
     tools,
     stopWhen: stepCountIs(10), // Allow up to 10 multi-step tool calls

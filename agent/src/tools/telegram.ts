@@ -152,6 +152,78 @@ export const sendMessage = tool({
   },
 });
 
+export const sendVoiceReply = tool({
+  description: `Generate a romantic TTS voice reply and send it to a Telegram chat as a voice note. Use when the user says "reply with voice", "send this as audio", or voice mode is enabled. Keep the girlfriend-style tone intimate, warm, and natural.`,
+  inputSchema: z.object({
+    chat_id: z.union([z.number(), z.string()]).describe("Chat ID or username"),
+    text: z.string().min(1).max(5000).describe("Text to synthesize into speech"),
+    caption: z.string().optional().describe("Optional caption shown with the voice/audio message"),
+    reply_to: z.number().optional().describe("Message ID to reply to"),
+    voice_id: z.string().optional().describe("Optional provider voice ID override"),
+    voice_note: z.boolean().default(true).describe("Send as Telegram voice note when true, regular audio when false"),
+  }),
+  execute: async ({ chat_id, text, caption, reply_to, voice_id, voice_note }) => {
+    const data = await telegramFetch<{ success: boolean; message_id: number; date: string; provider: string; voice_note: boolean }>(
+      `/chats/${chat_id}/voice`,
+      {
+        method: "POST",
+        body: JSON.stringify({ text, caption, reply_to, voice_id, voice_note }),
+      }
+    );
+    return {
+      success: data.success,
+      messageId: data.message_id,
+      sentAt: data.date,
+      provider: data.provider,
+      voiceNote: data.voice_note,
+    };
+  },
+});
+
+export const sendAudioReply = tool({
+  description: `Generate TTS and send it as a regular Telegram audio file instead of a voice note. Use when the user asks to "send this as audio" specifically.`,
+  inputSchema: z.object({
+    chat_id: z.union([z.number(), z.string()]).describe("Chat ID or username"),
+    text: z.string().min(1).max(5000).describe("Text to synthesize into speech"),
+    caption: z.string().optional(),
+    reply_to: z.number().optional(),
+    voice_id: z.string().optional(),
+  }),
+  execute: async ({ chat_id, text, caption, reply_to, voice_id }) => {
+    return telegramFetch(`/chats/${chat_id}/audio`, {
+      method: "POST",
+      body: JSON.stringify({ text, caption, reply_to, voice_id, voice_note: false }),
+    });
+  },
+});
+
+export const startCallMode = tool({
+  description: `Start a call-mode session scaffold. This coordinates Telegram text/voice flow and prepares for external realtime voice/video transport such as WebRTC, LiveKit, Daily, Tavus, or HeyGen. Be honest that native Telegram live calling is not fully implemented.`,
+  inputSchema: z.object({
+    chat_id: z.union([z.number(), z.string()]).describe("Chat ID or username"),
+    mode: z.enum(["voice", "video", "avatar"]).default("voice"),
+  }),
+  execute: async ({ chat_id, mode }) => {
+    return telegramFetch(`/chats/${chat_id}/call/start`, {
+      method: "POST",
+      body: JSON.stringify({ mode }),
+    });
+  },
+});
+
+export const stopCallMode = tool({
+  description: `Stop an active call-mode session scaffold.`,
+  inputSchema: z.object({
+    session_id: z.string().describe("Call session ID returned by startCallMode"),
+  }),
+  execute: async ({ session_id }) => {
+    return telegramFetch(`/call/stop`, {
+      method: "POST",
+      body: JSON.stringify({ session_id }),
+    });
+  },
+});
+
 export const scheduleMessage = tool({
   description: `Schedule a message to be sent at a future time. Perfect for sending good morning/night messages.`,
   inputSchema: z.object({
@@ -423,6 +495,8 @@ export const telegramTools = {
   getChats,
   getMessages,
   sendMessage,
+  sendVoiceReply,
+  sendAudioReply,
   scheduleMessage,
   getChat,
   searchContacts,
@@ -444,4 +518,6 @@ export const telegramTools = {
   getUserPhotos,
   // Media
   searchGifs,
+  startCallMode,
+  stopCallMode,
 };

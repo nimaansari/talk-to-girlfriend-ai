@@ -8,6 +8,7 @@ import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { chat, clearHistory, getHistoryLength } from "./agent";
 import { config, validateConfig } from "./config";
+import { getVoiceStatus, setPreferredVoice, setVoiceMode } from "./voiceSettings";
 
 // ASCII art banner
 const BANNER = `
@@ -23,6 +24,10 @@ ${pc.bold("Commands:")}
   ${pc.yellow("/help")}     - Show this help message
   ${pc.yellow("/clear")}    - Clear conversation history
   ${pc.yellow("/status")}   - Check connection status
+  ${pc.yellow("/voice on")} - Turn voice-mode guidance on
+  ${pc.yellow("/voice off")} - Turn voice-mode guidance off
+  ${pc.yellow("/voice status")} - Show voice settings
+  ${pc.yellow("/voice set <id>")} - Set preferred TTS voice ID
   ${pc.yellow("/quit")}     - Exit the agent
 
 ${pc.bold("Example prompts:")}
@@ -103,6 +108,38 @@ async function main() {
     if (message.startsWith("/")) {
       const command = message.toLowerCase();
 
+      if (command.startsWith("/voice")) {
+        const [, action, ...rest] = message.split(/\s+/);
+        switch ((action || "status").toLowerCase()) {
+          case "on":
+            setVoiceMode(true);
+            p.log.success("Voice mode enabled. The agent will prefer Telegram voice replies when sending.");
+            continue;
+          case "off":
+            setVoiceMode(false);
+            p.log.success("Voice mode disabled. The agent will prefer text replies.");
+            continue;
+          case "set": {
+            const voiceId = rest.join(" ").trim();
+            if (!voiceId) {
+              p.log.warn("Usage: /voice set <voice_id>");
+            } else {
+              setPreferredVoice(voiceId);
+              p.log.success(`Preferred voice set to ${voiceId}`);
+            }
+            continue;
+          }
+          case "status":
+          default: {
+            const status = getVoiceStatus();
+            p.log.info(
+              `Voice mode: ${status.replyMode}\nPreferred voice: ${status.preferredVoiceId || "not set"}\nCall mode: ${status.callModeAvailable ? "scaffolded" : "off"}`
+            );
+            continue;
+          }
+        }
+      }
+
       switch (command) {
         case "/help":
           console.log(HELP_TEXT);
@@ -121,6 +158,7 @@ async function main() {
               : pc.red("Telegram: Not connected ✗")
           );
           p.log.info(`Messages in history: ${getHistoryLength()}`);
+          p.log.info(`Voice mode: ${getVoiceStatus().replyMode}`);
           continue;
 
         case "/quit":

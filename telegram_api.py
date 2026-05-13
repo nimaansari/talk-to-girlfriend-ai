@@ -18,6 +18,9 @@ from telethon import TelegramClient, functions
 from telethon.sessions import StringSession
 from telethon.tl.types import User, Chat, Channel
 
+from call_service import CallMode, call_service
+from tts_service import cleanup_temp_file, text_to_speech_file
+
 load_dotenv()
 
 TELEGRAM_API_ID = int(os.getenv("TELEGRAM_API_ID"))
@@ -142,6 +145,22 @@ class ScheduleMessageRequest(BaseModel):
 
 class SendFileRequest(BaseModel):
     caption: Optional[str] = None
+
+
+class SendVoiceReplyRequest(BaseModel):
+    text: str
+    caption: Optional[str] = None
+    voice_note: bool = True
+    reply_to: Optional[int] = None
+    voice_id: Optional[str] = None
+
+
+class CallStartRequest(BaseModel):
+    mode: CallMode = CallMode.VOICE
+
+
+class CallStopRequest(BaseModel):
+    session_id: str
 
 
 # Endpoints
@@ -335,6 +354,74 @@ async def send_file(
             import os
             os.unlink(tmp_path)
             
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/chats/{chat_id}/voice")
+async def send_voice_reply(chat_id: Union[int, str], request: SendVoiceReplyRequest):
+    """Generate TTS audio from text and send it as Telegram audio or a voice note."""
+    audio_result = None
+    try:
+        if isinstance(chat_id, str) and not chat_id.lstrip('-').isdigit():
+            entity = await client.get_entity(chat_id)
+        else:
+            entity = await client.get_entity(int(chat_id))
+
+        audio_result = await text_to_speech_file(request.text, voice_id=request.voice_id)
+
+        kwargs = {
+            "caption": request.caption,
+            "voice_note": request.voice_note,
+        }
+        if request.reply_to:
+            kwargs["reply_to"] = request.reply_to
+
+        result = await client.send_file(entity, str(audio_result.path), **kwargs)
+
+        return {
+            "success": True,
+            "message_id": result.id,
+            "date": result.date.isoformat() if result.date else None,
+            "provider": audio_result.provider,
+            "voice_note": request.voice_note,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        if audio_result:
+            cleanup_temp_file(audio_result.path)
+
+
+@app.post("/chats/{chat_id}/audio")
+async def send_audio_reply(chat_id: Union[int, str], request: SendVoiceReplyRequest):
+    """Generate TTS audio from text and send it as a regular audio file."""
+    request.voice_note = False
+    return await send_voice_reply(chat_id, request)
+
+
+@app.post("/chats/{chat_id}/call/start")
+async def start_call_session(chat_id: Union[int, str], request: CallStartRequest):
+    """Start a call-mode session scaffold.
+
+    This does not fake Telegram-native calls. It creates a clean session object
+    for Telegram coordination plus a future WebRTC/LiveKit/Daily transport.
+    """
+    try:
+        session = await call_service.start_session(str(chat_id), request.mode)
+        return session.model_dump(mode="json")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/call/stop")
+async def stop_call_session(request: CallStopRequest):
+    """Stop a call-mode session scaffold."""
+    try:
+        session = await call_service.stop_session(request.session_id)
+        return session.model_dump(mode="json")
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

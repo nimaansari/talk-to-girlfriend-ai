@@ -38,6 +38,12 @@ export const config = {
 
   // AI Model - Claude Sonnet 4.5
   model: "anthropic/claude-sonnet-4.5",
+
+  // Voice / TTS
+  ttsProvider: process.env.TTS_PROVIDER || "elevenlabs",
+  ttsVoiceId: process.env.TTS_VOICE_ID || "",
+  ttsModel: process.env.TTS_MODEL || "eleven_multilingual_v2",
+  ttsOutputFormat: process.env.TTS_OUTPUT_FORMAT || "ogg_opus",
 } as const;
 
 export function validateConfig() {
